@@ -1,0 +1,123 @@
+// runner.proto — gRPC API between the control plane and the runner agent.
+//
+// Default port  : 5443 (mTLS)
+// Transport     : gRPC over mTLS (mutual TLS)
+//
+// The control plane (Linux VM) connects to the runner agent (Windows
+// session host) over the peered VNet.  Both sides present X.509 certs;
+// the CA is shared out-of-band at setup time.
+
+syntax = "proto3";
+
+package runner.v1;
+
+import "common/v1/common.proto";
+
+option go_package = "github.com/backbiten/32Hybrid/gen/runner/v1;runnerv1";
+
+// RunnerService is hosted by the Windows runner agent.
+service RunnerService {
+  // ListSessions returns all currently known Windows logon sessions on
+  // this host.  The control plane uses this to pick an ACTIVE session
+  // before calling RunInSession.
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+
+  // RunInSession downloads the EXE via the provided SAS URL, launches it
+  // in the specified interactive session via a Scheduled Task, and returns
+  // immediately.  Use GetStatus to poll for completion.
+  rpc RunInSession(RunInSessionRequest) returns (RunInSessionResponse);
+
+  // GetStatus returns the current state of a previously submitted run.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+}
+
+// ─────────────────────────────────────────────
+// ListSessions
+// ─────────────────────────────────────────────
+
+message ListSessionsRequest {}
+
+message Session {
+  // Opaque session identifier (e.g. Windows logon session ID as string).
+  string session_id = 1;
+
+  // Domain\Username or UPN of the logged-on user.
+  string username = 2;
+
+  // Interactive state of the session.
+  common.v1.SessionState state = 3;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+// ─────────────────────────────────────────────
+// RunInSession
+// ─────────────────────────────────────────────
+
+message RunInSessionRequest {
+  // Unique run identifier (UUID) supplied by the control plane.
+  string run_id = 1;
+
+  // Target Windows session identifier returned by ListSessions.
+  string session_id = 2;
+
+  // Azure Blob SAS URL with read permission for the EXE blob.
+  string exe_read_sas_url = 3;
+
+  // Azure Blob SAS URL with write permission for stdout capture.
+  // May be empty if stdout capture is not requested.
+  string stdout_write_sas_url = 4;
+
+  // Azure Blob SAS URL with write permission for stderr capture.
+  // May be empty if stderr capture is not requested.
+  string stderr_write_sas_url = 5;
+
+  // Azure Blob SAS URL with write permission for exit.json.
+  // Required — the runner must upload exit.json when the process finishes.
+  string exit_json_write_sas_url = 6;
+
+  // Command-line arguments to pass to the EXE.
+  repeated string args = 7;
+
+  // Environment variables in "KEY=VALUE" format for the process.
+  repeated string env = 8;
+
+  // Maximum wall-clock seconds before the runner cancels the run.
+  // Zero means use the runner's configured default.
+  int32 timeout_seconds = 9;
+}
+
+message RunInSessionResponse {
+  // Echoes the run_id for correlation.
+  string run_id = 1;
+}
+
+// ─────────────────────────────────────────────
+// GetStatus
+// ─────────────────────────────────────────────
+
+message GetStatusRequest {
+  string run_id = 1;
+}
+
+message GetStatusResponse {
+  string run_id = 1;
+
+  // Current lifecycle state of the run as seen by the runner.
+  common.v1.RunState state = 2;
+
+  // Human-readable error description if state is ERROR.
+  string error_message = 3;
+
+  // Unix timestamp (seconds) when the process started.
+  int64 started_at = 4;
+
+  // Unix timestamp (seconds) when the process finished.
+  // Zero if still running.
+  int64 finished_at = 5;
+
+  // Process exit code. Only meaningful when state is SUCCEEDED or FAILED.
+  int32 exit_code = 6;
+}

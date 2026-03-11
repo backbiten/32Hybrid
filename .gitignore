@@ -1,0 +1,11 @@
+# Build artifacts
+/bin/
+
+# Go test cache
+*.test
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

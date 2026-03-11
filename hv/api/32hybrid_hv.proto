@@ -1,0 +1,165 @@
+// 32hybrid_hv.proto — gRPC API definition for 32HybridHV
+//
+// Default ports:
+//   gRPC control plane : 50051
+//   REST health/status : 8080
+//
+// Authentication:
+//   All RPCs (except HealthCheck, which is optional) require a bearer token
+//   passed in gRPC metadata:
+//     authorization: Bearer <token>
+//
+//   The token is provisioned at VM setup time and stored in the host config.
+//   IP allowlist enforcement is handled by the guest agent before token
+//   validation.
+
+syntax = "proto3";
+
+package hybridhv.v1;
+
+option go_package = "github.com/backbiten/32Hybrid/hv/api/hybridhv/v1;hybridhvv1";
+
+// ─────────────────────────────────────────────
+// Service: HealthService
+// ─────────────────────────────────────────────
+
+// HealthService provides a lightweight liveness and readiness check.
+// Useful for load balancers, monitoring, and the REST /health proxy.
+service HealthService {
+  // HealthCheck returns the current status of the guest agent.
+  // This RPC may optionally be called without authentication for
+  // simple liveness probes; controlled by guest agent configuration.
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  // Human-readable status string, e.g. "ok".
+  string status = 1;
+
+  // Server wall-clock time as a Unix timestamp (seconds, 64-bit).
+  // This value is sourced from the time shim and should be correct
+  // past 2038-01-19.
+  int64 server_time_unix = 2;
+
+  // Wine version string reported by `wine --version`.
+  string wine_version = 3;
+}
+
+// ─────────────────────────────────────────────
+// Service: RunnerService
+// ─────────────────────────────────────────────
+
+// RunnerService manages Win32 application execution inside the guest.
+service RunnerService {
+  // RunExe launches a Win32 executable inside an isolated Wine prefix
+  // and returns the run ID and final exit status.
+  // Use StreamLogs to receive stdout/stderr in real time.
+  rpc RunExe(RunExeRequest) returns (RunExeResponse);
+
+  // StreamLogs opens a server-streaming RPC that delivers log lines
+  // (stdout + stderr) for an active or recently completed run.
+  // The stream closes when the process exits.
+  rpc StreamLogs(StreamLogsRequest) returns (stream LogLine);
+}
+
+message RunExeRequest {
+  // Absolute path to the Win32 executable inside the guest filesystem,
+  // e.g. "/var/32hybrid/prefixes/<prefix_id>/drive_c/app/app.exe"
+  // Upload the binary first using FileService.PutFile.
+  string exe_path = 1;
+
+  // Command-line arguments to pass to the executable.
+  repeated string args = 2;
+
+  // Environment variables to inject into the Wine process,
+  // in "KEY=VALUE" format.
+  repeated string env = 3;
+
+  // Working directory for the process inside the Wine prefix.
+  // Defaults to the directory containing exe_path if empty.
+  string working_dir = 4;
+
+  // Wine prefix identifier. A new prefix is created for each unique ID.
+  // Use a stable ID (e.g. app name) to reuse an existing prefix, or a
+  // UUID to get a fresh isolated prefix for every run.
+  string wine_prefix_id = 5;
+}
+
+message RunExeResponse {
+  // Unique run identifier assigned by the guest agent.
+  string run_id = 1;
+
+  // Process exit status code as returned by Wine / the Win32 process.
+  // Only populated after the process has exited.
+  int32 exit_status = 2;
+}
+
+message StreamLogsRequest {
+  // Run ID returned by RunExe.
+  string run_id = 1;
+}
+
+message LogLine {
+  // Log stream source.
+  enum Stream {
+    STREAM_UNSPECIFIED = 0;
+    STREAM_STDOUT = 1;
+    STREAM_STDERR = 2;
+  }
+
+  Stream stream = 1;
+
+  // Raw log line content (UTF-8; binary-safe content is base64-encoded
+  // by the agent to prevent log injection).
+  string content = 2;
+
+  // Timestamp of the log line as a Unix nanosecond value (64-bit).
+  int64 timestamp_nanos = 3;
+}
+
+// ─────────────────────────────────────────────
+// Service: FileService
+// ─────────────────────────────────────────────
+
+// FileService provides chunked file transfer between the host and guest.
+// Use PutFile to upload a Win32 binary before calling RunExe.
+// Use GetFile to retrieve output files or logs after a run.
+service FileService {
+  // PutFile uploads a file to the guest in a stream of chunks.
+  rpc PutFile(stream FileChunk) returns (PutFileResponse);
+
+  // GetFile downloads a file from the guest as a stream of chunks.
+  rpc GetFile(GetFileRequest) returns (stream FileChunk);
+}
+
+// FileChunk is used for both upload (PutFile) and download (GetFile).
+message FileChunk {
+  // Destination (for PutFile) or source (for GetFile) path inside
+  // the guest filesystem.
+  string path = 1;
+
+  // Chunk of file data. Maximum recommended chunk size: 64 KiB.
+  bytes data = 2;
+
+  // Byte offset of this chunk within the file.
+  // Used for integrity checking and resumable transfers.
+  int64 offset = 3;
+
+  // Set to true on the final chunk of a file.
+  bool is_last = 4;
+}
+
+message PutFileResponse {
+  // Absolute path where the file was written inside the guest.
+  string path = 1;
+
+  // Total number of bytes written.
+  int64 bytes_written = 2;
+}
+
+message GetFileRequest {
+  // Absolute path of the file to read inside the guest filesystem.
+  string path = 1;
+}

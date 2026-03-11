@@ -1,0 +1,48 @@
+#!/bin/sh
+# /init — Hyper 32 live image init script
+# Runs as PID 1 after the kernel mounts the initramfs.
+# Brings up a minimal environment and launches the Hyper 32 UI entrypoint.
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# ── Essential mounts ──────────────────────────────────────────────────────────
+mount -t proc     none /proc
+mount -t sysfs    none /sys
+mount -t devtmpfs none /dev 2>/dev/null || mdev -s
+mount -t tmpfs    tmpfs /tmp
+
+# ── Console ───────────────────────────────────────────────────────────────────
+[ -c /dev/console ] || mknod /dev/console c 5 1
+exec </dev/console >/dev/console 2>/dev/console
+
+# ── Read kernel parameters ────────────────────────────────────────────────────
+HYPER32_VERSION="dev"
+for param in $(cat /proc/cmdline); do
+    case "$param" in
+        HYPER32_VERSION=*) HYPER32_VERSION="${param#HYPER32_VERSION=}" ;;
+    esac
+done
+
+# ── Banner ────────────────────────────────────────────────────────────────────
+clear
+cat /etc/motd
+
+echo ""
+echo "  Hyper 32  version: ${HYPER32_VERSION}"
+echo "  Kernel:   $(uname -r)  ($(uname -m))"
+echo ""
+
+# ── Launch Hyper 32 entrypoint ────────────────────────────────────────────────
+# If the hyper32 binary exists, run it; otherwise fall back to the TUI menu.
+HYPER32_BIN="/usr/local/bin/hyper32"
+if [ -x "${HYPER32_BIN}" ]; then
+    exec "${HYPER32_BIN}" --live
+fi
+
+# Fallback TUI menu (pure shell, no external TUI deps required)
+/usr/local/bin/hyper32-menu
+
+# If the menu exits, drop to a shell so the operator can recover.
+echo ""
+echo "  Dropping to emergency shell.  Type 'poweroff' or 'reboot' when done."
+exec /bin/sh

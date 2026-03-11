@@ -1,0 +1,94 @@
+#!/bin/sh
+# hyper32-menu — minimal TUI menu for the Hyper 32 live image
+# Requires only /bin/sh and basic POSIX tools (provided by BusyBox).
+
+HYPER32_BIN="/usr/local/bin/hyper32"
+VERSION="$(cat /etc/hyper32-version 2>/dev/null || echo dev)"
+
+ESC="\033"
+BOLD="${ESC}[1m"
+CYAN="${ESC}[36m"
+RESET="${ESC}[0m"
+
+draw_menu() {
+    clear
+    printf "${CYAN}"
+    cat /etc/motd
+    printf "${RESET}"
+    printf "  Version: %s\n\n" "${VERSION}"
+    printf "  ${BOLD}Main Menu${RESET}\n"
+    printf "  ─────────────────────────────────\n"
+    printf "  1) Show version / build info\n"
+    printf "  2) Run Hyper 32 control-plane\n"
+    printf "  3) Run Hyper 32 runner agent\n"
+    printf "  4) Shell\n"
+    printf "  5) Reboot\n"
+    printf "  6) Power off\n"
+    printf "  ─────────────────────────────────\n"
+    printf "  Choice: "
+}
+
+while true; do
+    draw_menu
+    read -r choice
+    case "${choice}" in
+        1)
+            echo ""
+            echo "  Hyper 32 version : ${VERSION}"
+            echo "  Kernel           : $(uname -r)"
+            echo "  Architecture     : $(uname -m)"
+            if [ -x "${HYPER32_BIN}" ]; then
+                echo "  Binary           : ${HYPER32_BIN} (present)"
+                "${HYPER32_BIN}" --version 2>/dev/null || true
+            else
+                echo "  Binary           : (not yet present in this build)"
+            fi
+            echo ""
+            printf "  Press Enter to return to menu..."
+            read -r _
+            ;;
+        2)
+            if [ -x "${HYPER32_BIN}" ]; then
+                "${HYPER32_BIN}" --live || true
+            else
+                echo ""
+                echo "  [placeholder] Hyper 32 control-plane would start here."
+                echo "  Binary not found at ${HYPER32_BIN}."
+                echo ""
+                printf "  Press Enter..."
+                read -r _
+            fi
+            ;;
+        3)
+            if [ -x /usr/local/bin/runner ]; then
+                /usr/local/bin/runner || true
+            else
+                echo ""
+                echo "  [placeholder] Hyper 32 runner agent would start here."
+                echo "  Binary not found at /usr/local/bin/runner."
+                echo ""
+                printf "  Press Enter..."
+                read -r _
+            fi
+            ;;
+        4)
+            echo ""
+            echo "  Type 'exit' to return to menu."
+            /bin/sh
+            ;;
+        5)
+            echo "  Rebooting..."
+            sync
+            reboot -f 2>/dev/null || echo b >/proc/sysrq-trigger
+            ;;
+        6)
+            echo "  Powering off..."
+            sync
+            poweroff -f 2>/dev/null || echo o >/proc/sysrq-trigger
+            ;;
+        *)
+            echo "  Unknown option: ${choice}"
+            sleep 1
+            ;;
+    esac
+done

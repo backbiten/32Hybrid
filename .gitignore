@@ -1,6 +1,11 @@
 # Build artifacts
 /bin/
 
+# ISO build artifacts and downloads
+/dist/
+/iso/build/
+/iso/cache/
+
 # Go test cache
 *.test
 

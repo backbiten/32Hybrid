@@ -3,6 +3,32 @@ A reinvention and reinnovation of 32 bit architecture from the 70's and 80's
 
 ---
 
+## Third-Party Submodules
+
+This repository includes external projects tracked as git submodules under `third_party/`.
+
+| Submodule | Path | Source |
+|-----------|------|--------|
+| Signal-Desktop | `third_party/Signal-Desktop/` | https://github.com/backbiten/Signal-Desktop |
+
+### Cloning with submodules
+
+To clone this repository and initialise all submodules in one step:
+
+```sh
+git clone --recurse-submodules https://github.com/backbiten/32Hybrid.git
+```
+
+If you have already cloned the repo without submodules, run:
+
+```sh
+git submodule update --init --recursive
+```
+
+For full documentation of all third-party dependencies see [`third_party/MANIFEST.md`](third_party/MANIFEST.md).
+
+---
+
 ## 32HybridHV
 
 **32HybridHV** is the first subproject inside this repository. It is a **compatibility-first** runtime appliance for running existing Win32 (32-bit) binaries unchanged, while ensuring they continue to work correctly past the [Year 2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem).

@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -37,7 +38,7 @@ func TestMemStore_GetNotFound(t *testing.T) {
 func TestMemStore_List(t *testing.T) {
 	s := store.New()
 	for i := range 3 {
-		s.Put(&store.RunRecord{RunID: string(rune('a' + i))})
+		s.Put(&store.RunRecord{RunID: fmt.Sprintf("%c", 'a'+i)})
 	}
 	if got := len(s.List()); got != 3 {
 		t.Errorf("List: got %d items, want 3", got)

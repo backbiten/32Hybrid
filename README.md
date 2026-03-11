@@ -241,3 +241,28 @@ Makefile             # proto, build, test targets
 buf.yaml             # buf lint/breaking config
 buf.gen.yaml         # buf code generation config (uses remote plugins)
 ```
+
+---
+
+## Third-Party Submodules
+
+External projects are incorporated under `third_party/` as Git submodules.
+See [`third_party/MANIFEST.md`](third_party/MANIFEST.md) for the full list.
+
+| Submodule | Source | Path |
+|---|---|---|
+| tdesktop | https://github.com/telegramdesktop/tdesktop | `third_party/tdesktop/` |
+
+### Cloning with submodules
+
+To clone this repository and initialise all submodules in one step:
+
+```bash
+git clone --recurse-submodules https://github.com/backbiten/32Hybrid.git
+```
+
+If you have already cloned the repository without submodules:
+
+```bash
+git submodule update --init --recursive
+```

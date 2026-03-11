@@ -3,6 +3,27 @@ A reinvention and reinnovation of 32 bit architecture from the 70's and 80's
 
 ---
 
+## Third-Party Submodules
+
+External projects are incorporated under `third_party/` as git submodules.  See
+[`third_party/MANIFEST.md`](third_party/MANIFEST.md) for a full list.
+
+| Submodule | Source | Path |
+|-----------|--------|------|
+| bitcoin | https://github.com/bitcoin/bitcoin | `third_party/bitcoin/` |
+
+### Cloning with submodules
+
+```sh
+# Clone the repo and initialise all submodules in one step
+git clone --recurse-submodules https://github.com/backbiten/32Hybrid.git
+
+# Or, if you already have a clone without submodules
+git submodule update --init --recursive
+```
+
+---
+
 ## 32HybridHV
 
 **32HybridHV** is the first subproject inside this repository. It is a **compatibility-first** runtime appliance for running existing Win32 (32-bit) binaries unchanged, while ensuring they continue to work correctly past the [Year 2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem).

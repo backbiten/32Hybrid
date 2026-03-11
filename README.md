@@ -3,6 +3,25 @@ A reinvention and reinnovation of 32 bit architecture from the 70's and 80's
 
 ---
 
+## Repository overview
+
+This repository contains two subsystems that are converging toward a single complete operating system:
+
+| Subsystem | Directory | Language | Description |
+|-----------|-----------|----------|-------------|
+| **Hyper 32** | `cmd/`, `internal/`, `proto/`, `gen/`, `hv/` | Go + Protobuf | Modern 32-bit compatibility runtime with gRPC control plane |
+| **Legacy 32** | [`legacy32/`](legacy32/) | Python | Imported from [`backbiten/deadpgp`](https://github.com/backbiten/deadpgp) — PGP/OpenPGP orchestration tooling from the 1980s/90s, modernised |
+
+### Navigation
+
+- **Hyper 32 (Go/Buf):** `cmd/` · `internal/` · `proto/` · `gen/` · `hv/` · `docs/`
+- **Legacy 32 (Python):** `legacy32/` · see [`legacy32/README.md`](legacy32/README.md) and [`legacy32/INTEGRATION.md`](legacy32/INTEGRATION.md)
+
+> The Go/Buf build system (`make build`, `make proto`) covers Hyper 32 only.
+> Python tooling lives under `legacy32/` and is not yet wired into the top-level Makefile.
+
+---
+
 ## 32HybridHV
 
 **32HybridHV** is the first subproject inside this repository. It is a **compatibility-first** runtime appliance for running existing Win32 (32-bit) binaries unchanged, while ensuring they continue to work correctly past the [Year 2038 problem](https://en.wikipedia.org/wiki/Year_2038_problem).

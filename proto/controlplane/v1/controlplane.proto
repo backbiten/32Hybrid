@@ -1,0 +1,122 @@
+// controlplane.proto — gRPC API between the AVD client and the control plane.
+//
+// Default port  : 443 (TLS) or 50051 (plaintext dev)
+// Transport     : gRPC (HTTP/2)
+// Auth          : bearer token in "authorization" metadata (v0.1)
+//
+// The AVD client runs inside the AVD session and talks to the Linux
+// control-plane VM over the private VNet.
+
+syntax = "proto3";
+
+package controlplane.v1;
+
+import "common/v1/common.proto";
+
+option go_package = "github.com/backbiten/32Hybrid/gen/controlplane/v1;controlplanev1";
+
+// ControlPlaneService is called by the AVD client to submit and query runs.
+service ControlPlaneService {
+  // SubmitRun accepts an EXE (as raw bytes for MVP), uploads it to Blob
+  // storage, discovers the target runner, and dispatches the job.
+  // Returns a run_id that can be polled via GetRun.
+  rpc SubmitRun(SubmitRunRequest) returns (SubmitRunResponse);
+
+  // GetRun returns the current state and any available artifacts for a run.
+  rpc GetRun(GetRunRequest) returns (GetRunResponse);
+
+  // ListRuns returns recent runs (stubbed for MVP).
+  rpc ListRuns(ListRunsRequest) returns (ListRunsResponse);
+}
+
+// ─────────────────────────────────────────────
+// SubmitRun
+// ─────────────────────────────────────────────
+
+message SubmitRunRequest {
+  // Raw EXE bytes (MVP upload path). Required.
+  bytes exe_bytes = 1;
+
+  // Optional: client-supplied SHA-256 hex of exe_bytes.
+  // If provided the control plane verifies it; on mismatch the RPC fails.
+  string exe_sha256 = 2;
+
+  // Filename for the EXE, e.g. "myapp.exe".
+  // Used as the blob object name suffix.
+  string exe_name = 3;
+
+  // Command-line arguments forwarded to the process.
+  repeated string args = 4;
+
+  // Environment variables in "KEY=VALUE" format forwarded to the process.
+  repeated string env = 5;
+
+  // Maximum wall-clock seconds to allow before the run is cancelled.
+  // Zero means use the server default (300 s).
+  int32 timeout_seconds = 6;
+}
+
+message SubmitRunResponse {
+  // Unique run identifier (UUID).
+  string run_id = 1;
+}
+
+// ─────────────────────────────────────────────
+// GetRun
+// ─────────────────────────────────────────────
+
+message GetRunRequest {
+  string run_id = 1;
+}
+
+message GetRunResponse {
+  string run_id = 1;
+
+  // Current lifecycle state.
+  common.v1.RunState state = 2;
+
+  // Unix timestamp (seconds) when SubmitRun was accepted.
+  int64 submitted_at = 3;
+
+  // Unix timestamp (seconds) when the runner reported the process started.
+  // Zero if not yet started.
+  int64 started_at = 4;
+
+  // Unix timestamp (seconds) when the runner reported the process finished.
+  // Zero if still running.
+  int64 finished_at = 5;
+
+  // Process exit code. Only meaningful when state is SUCCEEDED or FAILED.
+  int32 exit_code = 6;
+
+  // Human-readable error if state is ERROR.
+  string error_message = 7;
+
+  // Azure Blob path of exit.json (e.g. "runs/<run_id>/exit.json").
+  string exit_json_blob_path = 8;
+
+  // Azure Blob path of captured stdout (may be empty if not captured).
+  string stdout_blob_path = 9;
+
+  // Azure Blob path of captured stderr (may be empty if not captured).
+  string stderr_blob_path = 10;
+
+  // Session that executed the run.
+  string session_id = 11;
+}
+
+// ─────────────────────────────────────────────
+// ListRuns
+// ─────────────────────────────────────────────
+
+message ListRunsRequest {
+  // Maximum number of results. Defaults to 50 if zero.
+  int32 page_size = 1;
+  // Opaque pagination token from a previous response.
+  string page_token = 2;
+}
+
+message ListRunsResponse {
+  repeated GetRunResponse runs = 1;
+  string next_page_token = 2;
+}

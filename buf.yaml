@@ -1,0 +1,11 @@
+version: v2
+modules:
+  - path: proto
+lint:
+  use:
+    - DEFAULT
+  except:
+    - PACKAGE_VERSION_SUFFIX   # allow common/v1 without version-suffixed package name enforcement issue
+breaking:
+  use:
+    - FILE

@@ -1,0 +1,29 @@
+// common.proto — shared message types for the 32Hybrid AVD system.
+//
+// Used by both the control-plane and runner services to avoid
+// duplicating message definitions.
+
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/backbiten/32Hybrid/gen/common/v1;commonv1";
+
+// RunState represents the lifecycle state of a single run.
+enum RunState {
+  RUN_STATE_UNSPECIFIED = 0;
+  RUN_STATE_PENDING     = 1; // accepted, not yet dispatched to runner
+  RUN_STATE_RUNNING     = 2; // runner acknowledged and scheduled task started
+  RUN_STATE_SUCCEEDED   = 3; // process exited 0
+  RUN_STATE_FAILED      = 4; // process exited non-zero
+  RUN_STATE_ERROR       = 5; // infrastructure / dispatch error
+  RUN_STATE_TIMEDOUT    = 6; // exceeded timeout_seconds
+}
+
+// SessionState describes the interactive state of a Windows user session.
+enum SessionState {
+  SESSION_STATE_UNSPECIFIED  = 0;
+  SESSION_STATE_ACTIVE       = 1; // logged-in and at an interactive desktop
+  SESSION_STATE_DISCONNECTED = 2; // session exists but display is not active
+  SESSION_STATE_INACTIVE     = 3; // other non-interactive state
+}

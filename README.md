@@ -240,4 +240,31 @@ internal/
 Makefile             # proto, build, test targets
 buf.yaml             # buf lint/breaking config
 buf.gen.yaml         # buf code generation config (uses remote plugins)
+third_party/         # Incorporated third-party projects (git submodules)
+  vlc/               # VLC media player (https://github.com/videolan/vlc)
+  MANIFEST.md        # Inventory of all third-party dependencies
+```
+
+---
+
+## Third-Party Submodules
+
+External projects are tracked as git submodules under `third_party/`. See [`third_party/MANIFEST.md`](third_party/MANIFEST.md) for the full inventory.
+
+| Submodule | Source | Purpose |
+|---|---|---|
+| `third_party/vlc` | https://github.com/videolan/vlc | incorporated dependency/project reference |
+
+### Cloning with submodules
+
+When cloning this repository, include submodules:
+
+```bash
+git clone --recurse-submodules https://github.com/backbiten/32Hybrid.git
+```
+
+Or, if you have already cloned without submodules:
+
+```bash
+git submodule update --init --recursive
 ```

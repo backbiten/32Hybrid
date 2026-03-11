@@ -1,0 +1,3 @@
+[submodule "third_party/vlc"]
+	path = third_party/vlc
+	url = https://github.com/videolan/vlc

@@ -1,3 +1,7 @@
 [submodule "third_party/vlc"]
 	path = third_party/vlc
 	url = https://github.com/videolan/vlc
+
+[submodule "third_party/bitcoin"]
+	path = third_party/bitcoin
+	url = https://github.com/bitcoin/bitcoin

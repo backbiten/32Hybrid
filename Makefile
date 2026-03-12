@@ -13,9 +13,9 @@ DIST_DIR        := dist
 ISO_OUTPUT      := $(DIST_DIR)/hyper32.iso
 ISO_SCRIPT      := iso/build.sh
 
-.PHONY: all proto build clean test install-proto-tools iso run-iso check-iso-deps
+.PHONY: all proto proto-hv build clean test install-proto-tools iso run-iso check-iso-deps
 
-all: proto build
+all: proto proto-hv build
 
 # ─────────────────────────────────────────────
 # Proto generation
@@ -53,6 +53,17 @@ proto: install-proto-tools
 		--go-grpc_opt=require_unimplemented_servers=false \
 		$(PROTO_DIR)/runner/v1/runner.proto
 	@echo "Proto generation complete."
+
+## proto-hv: generate HV subsystem code
+proto-hv:
+	$(PROTOC) \
+		--proto_path=hv/api \
+		--go_out=gen \
+		--go_opt=paths=source_relative \
+		--go-grpc_out=gen \
+		--go-grpc_opt=paths=source_relative \
+		--go-grpc_opt=require_unimplemented_servers=false \
+		hv/api/32hybrid_hv.proto
 
 ## build: compile all binaries into bin/
 build:

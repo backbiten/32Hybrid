@@ -1,5 +1,5 @@
 # Makefile for the 32Hybrid AVD system
-# Targets: proto, build, clean, test
+# Targets: proto, build, clean, test, iso, run-iso
 
 GOPATH          ?= $(shell go env GOPATH)
 PROTOC          ?= protoc
@@ -9,8 +9,11 @@ PROTO_DIR       := proto
 GEN_DIR         := gen
 CMD_DIRS        := ./cmd/controlplane ./cmd/runner ./cmd/avdclient
 BIN_DIR         := bin
+DIST_DIR        := dist
+ISO_OUTPUT      := $(DIST_DIR)/hyper32.iso
+ISO_SCRIPT      := iso/build.sh
 
-.PHONY: all proto build clean test install-proto-tools
+.PHONY: all proto build clean test install-proto-tools iso run-iso check-iso-deps
 
 all: proto build
 
@@ -63,6 +66,37 @@ build:
 test:
 	go test ./...
 
-## clean: remove generated binaries
+## clean: remove generated binaries and ISO build artifacts
 clean:
-	rm -rf $(BIN_DIR)
+	rm -rf $(BIN_DIR) $(DIST_DIR) iso/build
+
+# ─────────────────────────────────────────────
+# ISO build
+# ─────────────────────────────────────────────
+
+## check-iso-deps: verify ISO build prerequisites are installed
+check-iso-deps:
+	@bash iso/scripts/check-deps.sh
+
+## iso: build a bootable Hyper 32 live ISO -> dist/hyper32.iso
+## The Go binaries are built first so they can be bundled into the image.
+## Re-run 'make iso' after any Go changes to refresh the ISO.
+iso: build
+	@echo "Building Hyper 32 ISO..."
+	@bash $(ISO_SCRIPT)
+	@echo "ISO ready: $(ISO_OUTPUT)"
+
+## run-iso: boot the ISO in QEMU (requires qemu-system-x86_64)
+run-iso: $(ISO_OUTPUT)
+	@command -v qemu-system-x86_64 >/dev/null 2>&1 || \
+	    { echo "ERROR: qemu-system-x86_64 not found. Install qemu-system-x86."; exit 1; }
+	qemu-system-x86_64 \
+	    -m 512M \
+	    -cdrom $(ISO_OUTPUT) \
+	    -boot d \
+	    -nographic \
+	    -serial mon:stdio \
+	    -no-reboot
+
+$(ISO_OUTPUT):
+	@$(MAKE) iso

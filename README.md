@@ -1,1 +1,2 @@
-| `third_party/kali` | https://www.kali.org/ | security auditing and penetration testing tools |\n
+| `third_party/kali` | https://www.kali.org/ | security auditing and penetration testing tools |
+| `third_party/ipfire` | https://www.ipfire.org/ | versatile and state-of-the-art Open Source firewall |

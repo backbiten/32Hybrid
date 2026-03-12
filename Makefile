@@ -13,7 +13,7 @@ DIST_DIR        := dist
 ISO_OUTPUT      := $(DIST_DIR)/hyper32.iso
 ISO_SCRIPT      := iso/build.sh
 
-.PHONY: all proto proto-hv build clean test install-proto-tools iso run-iso check-iso-deps
+.PHONY: all proto proto-hv build clean test install-proto-tools iso run-iso check-iso-deps reinit pure32
 
 all: proto proto-hv build
 
@@ -111,3 +111,15 @@ run-iso: $(ISO_OUTPUT)
 
 $(ISO_OUTPUT):
 	@$(MAKE) iso
+
+# ─────────────────────────────────────────────
+# Reinitialization and Legacy
+# ─────────────────────────────────────────────
+
+## reinit: full project reinitialization
+reinit:
+	@bash scripts/reinit-32hybrid.sh
+
+## pure32: switch to pure 32-bit legacy mode
+pure32:
+	@bash scripts/pure-32bit-legacy.sh

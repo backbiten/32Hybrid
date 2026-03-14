@@ -37,6 +37,7 @@ import (
 	cpv1 "github.com/backbiten/32Hybrid/gen/controlplane/v1"
 	runnerv1 "github.com/backbiten/32Hybrid/gen/runner/v1"
 	"github.com/backbiten/32Hybrid/internal/config"
+	"github.com/backbiten/32Hybrid/internal/contemplation"
 	"github.com/backbiten/32Hybrid/internal/discovery"
 	"github.com/backbiten/32Hybrid/internal/sas"
 	"github.com/backbiten/32Hybrid/internal/store"
@@ -50,6 +51,12 @@ type Server struct {
 
 	// mu guards concurrent SubmitRun calls (one run dispatched at a time for MVP).
 	mu sync.Mutex
+
+	// contemplationLock is the startup Neural Registry lock.  While it is
+	// held (not Ready), SubmitRun returns Unavailable so that the AI Teacher
+	// cannot access the Micro-Bus before the 15-minute i386 synchronisation
+	// completes.  A nil value disables the check (used in tests).
+	contemplationLock *contemplation.Lock
 }
 
 // NewServer constructs a Server. cfg must be non-nil.
@@ -61,8 +68,27 @@ func NewServer(cfg *config.ControlPlaneConfig, disc discovery.Discoverer) *Serve
 	}
 }
 
+// SetContemplationLock attaches a startup Neural Registry lock to the server.
+// While the lock is not Ready, SubmitRun returns codes.Unavailable.
+// This must be called before the server starts accepting connections.
+func (s *Server) SetContemplationLock(lock *contemplation.Lock) {
+	s.contemplationLock = lock
+}
+
 // SubmitRun implements cpv1.ControlPlaneServiceServer.
 func (s *Server) SubmitRun(ctx context.Context, req *cpv1.SubmitRunRequest) (*cpv1.SubmitRunResponse, error) {
+	// Enforce the Neural Registry startup lock: the AI Teacher may not access
+	// the Micro-Bus or dispatch tasks to the IA Student until the 15-minute
+	// i386 Contemplation Period has completed.
+	if s.contemplationLock != nil && !s.contemplationLock.Ready() {
+		remaining := s.contemplationLock.RemainingSeconds()
+		return nil, status.Errorf(codes.Unavailable,
+			"AI Teacher is in the Contemplation Period: 32-bit Neural Root synchronisation "+
+				"in progress (%d seconds remaining). "+
+				"Please wait for the 15-minute i386 synchronisation to complete.",
+			remaining)
+	}
+
 	if len(req.ExeBytes) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "exe_bytes is required")
 	}

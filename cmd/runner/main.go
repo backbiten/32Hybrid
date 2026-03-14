@@ -11,6 +11,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"flag"
@@ -25,6 +26,7 @@ import (
 
 	runnerv1 "github.com/backbiten/32Hybrid/gen/runner/v1"
 	"github.com/backbiten/32Hybrid/internal/config"
+	"github.com/backbiten/32Hybrid/internal/contemplation"
 	"github.com/backbiten/32Hybrid/internal/runner"
 )
 
@@ -36,6 +38,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+
+	runContemplationGate("runner agent")
 
 	srv := runner.NewServer(cfg,
 		&runner.StubEnumerator{},
@@ -113,4 +117,17 @@ func buildServerCreds(cfg *config.RunnerAgentConfig) (credentials.TransportCrede
 		MinVersion:   tls.VersionTLS13,
 	}
 	return credentials.NewTLS(tlsCfg), nil
+}
+
+func runContemplationGate(component string) {
+	duration := contemplation.DurationFromEnv("HYPER32_CONTEMPLATION_SECONDS", contemplation.DefaultDuration)
+	log.Printf("%s entering 32-bit contemplation for %s (override via HYPER32_CONTEMPLATION_SECONDS). Kernel hook is holding the process in WAIT until the neural registry releases the lock.", component, duration)
+	if err := contemplation.Run(context.Background(), contemplation.Options{
+		Duration: duration,
+		Writer:   os.Stdout,
+		Label:    "Synchronizing Neural Root...",
+	}); err != nil {
+		log.Fatalf("contemplation period interrupted: %v", err)
+	}
+	log.Printf("%s contemplation complete; micro-bus access restored.", component)
 }

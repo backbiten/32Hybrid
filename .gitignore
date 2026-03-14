@@ -1,5 +1,15 @@
 # Build artifacts
 /bin/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.dll
+
+# Binary executables
+/contemplation-demo
+/legacy32/contemplation
 
 # ISO build artifacts and downloads
 /dist/
@@ -8,6 +18,10 @@
 
 # Go test cache
 *.test
+
+# Temporary files
+/tmp/
+*.tmp
 
 # Editor / OS files
 .DS_Store

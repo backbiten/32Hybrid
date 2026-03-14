@@ -10,6 +10,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -20,6 +21,7 @@ import (
 
 	cpv1 "github.com/backbiten/32Hybrid/gen/controlplane/v1"
 	"github.com/backbiten/32Hybrid/internal/config"
+	"github.com/backbiten/32Hybrid/internal/contemplation"
 	"github.com/backbiten/32Hybrid/internal/controlplane"
 	"github.com/backbiten/32Hybrid/internal/discovery"
 )
@@ -32,6 +34,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+
+	runContemplationGate("control plane")
 
 	disc := buildDiscoverer(cfg)
 
@@ -103,4 +107,17 @@ func buildDiscoverer(cfg *config.ControlPlaneConfig) discovery.Discoverer {
 		HostPoolName:   cfg.Azure.HostPoolName,
 		TargetUsername: cfg.Azure.TargetUsername,
 	}
+}
+
+func runContemplationGate(component string) {
+	duration := contemplation.DurationFromEnv("HYPER32_CONTEMPLATION_SECONDS", contemplation.DefaultDuration)
+	log.Printf("%s entering 32-bit contemplation for %s (override via HYPER32_CONTEMPLATION_SECONDS). Kernel hook is holding the process in WAIT until the neural registry releases the lock.", component, duration)
+	if err := contemplation.Run(context.Background(), contemplation.Options{
+		Duration: duration,
+		Writer:   os.Stdout,
+		Label:    "Synchronizing Neural Root...",
+	}); err != nil {
+		log.Fatalf("contemplation period interrupted: %v", err)
+	}
+	log.Printf("%s contemplation complete; micro-bus access restored.", component)
 }

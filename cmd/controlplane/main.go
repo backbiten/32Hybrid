@@ -20,6 +20,7 @@ import (
 
 	cpv1 "github.com/backbiten/32Hybrid/gen/controlplane/v1"
 	"github.com/backbiten/32Hybrid/internal/config"
+	"github.com/backbiten/32Hybrid/internal/contemplation"
 	"github.com/backbiten/32Hybrid/internal/controlplane"
 	"github.com/backbiten/32Hybrid/internal/discovery"
 )
@@ -36,6 +37,16 @@ func main() {
 	disc := buildDiscoverer(cfg)
 
 	srv := controlplane.NewServer(cfg, disc)
+
+	// Start the mandatory 15-minute i386 Contemplation Period.  The Neural
+	// Registry lock prevents the AI Teacher from dispatching tasks to the IA
+	// Student over the Micro-Bus until the synchronisation completes.
+	// Progress is logged to stdout so that the WinStratch dialog (or any
+	// terminal) can display the "Synchronizing Neural Root..." progress bar
+	// with per-second i386 concept descriptions.
+	contemplationLock := contemplation.New(contemplation.DefaultDuration, nil)
+	srv.SetContemplationLock(contemplationLock)
+	go contemplationLock.Run()
 
 	lis, err := net.Listen("tcp", cfg.ListenAddr)
 	if err != nil {
